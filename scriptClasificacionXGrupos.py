@@ -1,3 +1,5 @@
+import math
+
 colColores = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
 colElementosXColor = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
@@ -6,7 +8,9 @@ def obtenerListaLineas(rutaFichero):
     lista = []
     archivo = open(rutaFichero, "r")
     for linea in archivo.readlines():
-        lista.append(linea)
+        lineaFiltrada = linea.strip("\n")
+        lineaFiltrada = linea.replace(",", ".")
+        lista.append(lineaFiltrada)
     archivo.close()
     return lista
 
@@ -48,42 +52,68 @@ def obtenerTuplasConfictoEnMapeoColorAMatriz(colTuplasIndices, matrizGrupos, col
         colElementosXColor[indiceColor] = colElementosXColor[indiceColor] + 1  
     return colTuplasConflicto      
 
-def procesarLinea(matrizGrupos, linea, umbral, separador, color):
+def resolverConflictos(colTuplasConflicto, matrizGrupos):
+    global colElementosXColor
+    for tupla in colTuplasConflicto:
+        fila, columna = tupla[0], tupla[1]
+        tuplaColores = matrizGrupos[fila][columna]
+        colorAnterior, colorNuevo = tuplaColores[0], tuplaColores[1]
+        indiceColorAnterior, indiceColorNuevo = colColores.index(colorAnterior), colColores.index(colorNuevo)
+        if colElementosXColor[indiceColorAnterior] >= colElementosXColor[indiceColorNuevo]:
+            colElementosXColor[indiceColorNuevo] = colElementosXColor[indiceColorNuevo] - 1
+            matrizGrupos[fila][columna] = colorAnterior
+        else:
+            colElementosXColor[indiceColorAnterior] = colElementosXColor[indiceColorAnterior] - 1
+            matrizGrupos[fila][columna] = colorNuevo
+
+def procesarLinea(matrizGrupos, colElementos, umbral, color):
     dimension = len(matrizGrupos)
-    listaElementos = linea.split(separador)
-    if ((len(listaElementos) % dimension) == 0):
+    matrizDeLinea = crearMatriz(colElementos, dimension)
 
-        matrizDeLinea = crearMatriz(listaElementos, dimension)
-        print("\nMOSTRANDO: matriz de linea ----------------------------------")
-        imprimirMatriz(matrizDeLinea)
+    print("\nMOSTRANDO: matriz de linea ----------------------------------")
 
-        coleccionTuplasMapear = obtenerColTuplasIndicesElementosFiltrados(matrizDeLinea, umbral)
-        tuplasConflicto = obtenerTuplasConfictoEnMapeoColorAMatriz(coleccionTuplasMapear, matrizGrupos, color)
-        print("\nMOSTRANDO: Matriz de grupos ----------------------------------")
-        imprimirMatriz(matrizGrupos)
-        print("\nMOSTRANDO: coleccion de elementos por color ----------------------------------")
-        print(colElementosXColor)
-        print("\nMOSTRANDO: tuplas en conflicto ----------------------------------")
-        print(tuplasConflicto)
+    imprimirMatriz(matrizDeLinea)
 
-    else:
-        print ("Error: la cantidad de elementos de la linea es diferente al numero de columnas")
+    coleccionTuplasMapear = obtenerColTuplasIndicesElementosFiltrados(matrizDeLinea, umbral)
+    tuplasConflicto = obtenerTuplasConfictoEnMapeoColorAMatriz(coleccionTuplasMapear, matrizGrupos, color)
+
+    print("\nMOSTRANDO: Matriz de grupos ----------------------------------")
+
+    imprimirMatriz(matrizGrupos)
+
+    print("\nMOSTRANDO: coleccion de elementos por color ----------------------------------")
+    print(colElementosXColor)
+
+    resolverConflictos(tuplasConflicto, matrizGrupos)
+
+    print("\nMOSTRANDO: elementos por color ----------------------------------")
+    print(colElementosXColor)
+
 
 
 
 def main():    
-    #dato 3 de prueba
-    dimensionMatriz = 4
-    indiceColor = 0
-    listaLineas = obtenerListaLineas("testDatos.txt")
+    dimensionMatriz = 5
+    listaLineas = obtenerListaLineas("salida.txt")
     #la siguiente linea de codigo hace que se genere un cero (range(1)) y se cree una fila A de un numero de ceros del tamanio de dimensionMatriz que esta antes del for, luego se crean replicas de la fila A, el numero de replicas es dimensionMatriz que esta despues del for
     matriz = [dimensionMatriz * range(1) for fila in range(dimensionMatriz)]
 
-    for linea in range(2):
-        procesarLinea(matriz, listaLineas[linea], 50, ";", colColores[indiceColor])
-        indiceColor = indiceColor + 1
+    for indiceLinea in range(0, len(listaLineas)):
+        linea = listaLineas[indiceLinea]
+        indiceColor = colElementosXColor.index(0)
+        colElementos = linea.split(";")
+        if (dimensionMatriz == math.sqrt(len(colElementos))):
+            procesarLinea(matriz, colElementos, 0.85, colColores[indiceColor])        
+        else:
+            print("Error: dimension de matriz distinta a numero de elementos por linea")
+            break
+    print("\nMatriz Resultado: -------------------------------------\n")
+    imprimirMatriz(matriz)
 
 main()    
+
+
+
 
 
 
